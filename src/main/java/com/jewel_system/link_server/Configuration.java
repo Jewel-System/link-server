@@ -13,4 +13,5 @@ public class Configuration {
     public static HttpServer SERVER;
     public static InetAddress ADDRESS;
     public static int PORT;
+    public static String PROTOCOL = "http";
 }

@@ -3,11 +3,7 @@ package com.jewel_system.link_server;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
+import java.net.*;
 
 /**
  * Created by Benjamin Claassen <BClaassen@live.com> on 8/5/2016.
@@ -27,6 +23,7 @@ public class Start {
      */
     public static void findServer() {
         try {
+            System.out.println("Launching");
             DatagramSocket socket = new DatagramSocket(53456);
             byte[] test = {1};
             socket.send(new DatagramPacket(test, test.length, InetAddress.getByName("224.0.0.1"), 53457));
@@ -38,7 +35,7 @@ public class Start {
             DatagramPacket packet = new DatagramPacket(test, test.length);
             socket.receive(packet);
             Configuration.ADDRESS = packet.getAddress();
-            Configuration.PORT = ByteBuffer.wrap(test).getInt();
+            Configuration.PORT = Integer.parseInt(new String(test).trim());
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -50,7 +47,7 @@ public class Start {
      */
     public static void createServer() {
         try {
-            Configuration.SERVER = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 80), 50);
+            Configuration.SERVER = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 200), 50);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -63,9 +60,29 @@ public class Start {
     public static void setupHandlers() {
         Configuration.SERVER.createContext("/", httpExchange -> {
             //TODO: Process local request
+            System.out.println("Connection");
         });
         Configuration.SERVER.createContext("/API/", httpExchange -> {
             //TODO: Send to backend
+            try {
+                URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostAddress() + ":" + Configuration.PORT + httpExchange.getRequestURI());
+
+                URLConnection cc = url.openConnection();
+                if (cc instanceof HttpURLConnection) {
+                    HttpURLConnection connection = (HttpURLConnection) cc;
+
+                    connection.setRequestMethod(httpExchange.getRequestMethod());
+                    httpExchange.getRequestHeaders().forEach((key, value) -> {
+                        for (String v : value) {
+                            connection.addRequestProperty(key, v);
+                        }
+                    });
+
+                    connection.connect();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
     }
 
