@@ -4,6 +4,9 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by Benjamin Claassen <BClaassen@live.com> on 8/5/2016.
@@ -12,15 +15,6 @@ import java.net.*;
  */
 public class Start {
     public static void main(String[] args) {
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                e.printStackTrace();
-
-                System.exit(1);
-            }
-        });
-
         findServer();
         createServer();
         setupHandlers();
@@ -68,11 +62,25 @@ public class Start {
      */
     public static void setupHandlers() {
         Configuration.SERVER.createContext("/", httpExchange -> {
-            //TODO: Process local request
-            System.out.println("Connection");
+            try {
+                Path file = Paths.get(Configuration.WEB_BASE + httpExchange.getRequestURI().getRawPath()).toAbsolutePath();
+                if (Files.isDirectory(file)) {
+                    file = Paths.get(file.toString() + "/index.html");
+                }
+                if (Files.exists(file)) {
+                    httpExchange.sendResponseHeaders(200, Files.size(file));
+                    Files.copy(file, httpExchange.getResponseBody());
+                    httpExchange.close();
+                } else {
+                    httpExchange.sendResponseHeaders(404, Configuration.ERROR_404.length());
+                    httpExchange.getResponseBody().write(Configuration.ERROR_404.getBytes("UTF-8"));
+                    httpExchange.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
         Configuration.SERVER.createContext("/api/", httpExchange -> {
-            //TODO: Send to backend
             try {
                 URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostAddress() + ":" + Configuration.PORT + httpExchange.getRequestURI());
 
@@ -80,6 +88,7 @@ public class Start {
                 if (cc instanceof HttpURLConnection) {
 
                     BackendRequest request = new BackendRequest(httpExchange.getRequestHeaders(), httpExchange.getRequestBody(), httpExchange.getRequestMethod(), httpExchange.getRequestURI().toString());
+                    //TODO: Store if sending fails
                     request.sendRequest(httpExchange);
                 }
                 httpExchange.close();
