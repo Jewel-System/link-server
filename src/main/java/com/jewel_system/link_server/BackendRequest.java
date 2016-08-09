@@ -99,9 +99,10 @@ public class BackendRequest implements Serializable {
                 exchange.sendResponseHeaders(connection.getResponseCode(), 0);
 
                 byte[] data = new byte[16384];
+                int nRead;
 
-                while (connection.getInputStream().read(data, 0, data.length) != -1) {
-                    exchange.getResponseBody().write(data);
+                while ((nRead = connection.getInputStream().read(data, 0, data.length)) != -1) {
+                    exchange.getResponseBody().write(data, 0, nRead);
                 }
             }
         }
