@@ -12,6 +12,15 @@ import java.net.*;
  */
 public class Start {
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                e.printStackTrace();
+
+                System.exit(1);
+            }
+        });
+
         findServer();
         createServer();
         setupHandlers();
@@ -23,7 +32,6 @@ public class Start {
      */
     public static void findServer() {
         try {
-            System.out.println("Launching");
             DatagramSocket socket = new DatagramSocket(53456);
             byte[] test = {1};
             socket.send(new DatagramPacket(test, test.length, InetAddress.getByName("224.0.0.1"), 53457));
@@ -37,6 +45,7 @@ public class Start {
             Configuration.ADDRESS = packet.getAddress();
             Configuration.PORT = Integer.parseInt(new String(test).trim());
             socket.close();
+            System.out.println("Found server at: " + Configuration.ADDRESS + ":" + Configuration.PORT);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -62,24 +71,18 @@ public class Start {
             //TODO: Process local request
             System.out.println("Connection");
         });
-        Configuration.SERVER.createContext("/API/", httpExchange -> {
+        Configuration.SERVER.createContext("/api/", httpExchange -> {
             //TODO: Send to backend
             try {
                 URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostAddress() + ":" + Configuration.PORT + httpExchange.getRequestURI());
 
                 URLConnection cc = url.openConnection();
                 if (cc instanceof HttpURLConnection) {
-                    HttpURLConnection connection = (HttpURLConnection) cc;
 
-                    connection.setRequestMethod(httpExchange.getRequestMethod());
-                    httpExchange.getRequestHeaders().forEach((key, value) -> {
-                        for (String v : value) {
-                            connection.addRequestProperty(key, v);
-                        }
-                    });
-
-                    connection.connect();
+                    BackendRequest request = new BackendRequest(httpExchange.getRequestHeaders(), httpExchange.getRequestBody(), httpExchange.getRequestMethod(), httpExchange.getRequestURI().toString());
+                    request.sendRequest(httpExchange);
                 }
+                httpExchange.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
