@@ -75,19 +75,23 @@ public class BackendRequest implements Serializable {
 
             HttpURLConnection connection = (HttpURLConnection) cc;
 
-            connection.setRequestMethod(method);
+            connection.setDoInput(true);
             headers.forEach((key, value) -> {
-                for (String v : value) {
-                    connection.addRequestProperty(key, v);
+                if (key != null) {
+                    for (String v : value) {
+                        connection.addRequestProperty(key, v);
+                    }
                 }
             });
 
-            connection.setDoOutput(true);
-            connection.setDoInput(true);
+            if (content.length > 0) {
+                connection.setDoOutput(true);
+                OutputStream os = connection.getOutputStream();
+                os.write(content);
+                os.flush();
+            }
 
-            OutputStream os = connection.getOutputStream();
-            os.write(content);
-            os.flush();
+            connection.setRequestMethod(method);
 
 
             if (exchange != null) {
@@ -96,13 +100,24 @@ public class BackendRequest implements Serializable {
                         exchange.getResponseHeaders().put(k, v);
                     }
                 });
-                exchange.sendResponseHeaders(connection.getResponseCode(), 0);
+                if (connection.getResponseCode() == 304) {
+                    exchange.sendResponseHeaders(connection.getResponseCode(), -1);
+                } else {
+                    exchange.sendResponseHeaders(connection.getResponseCode(), 0);
 
-                byte[] data = new byte[16384];
-                int nRead;
+                    InputStream is;
+                    if (connection.getResponseCode() >= HttpURLConnection.HTTP_BAD_REQUEST) {
+                        is = connection.getErrorStream();
+                    } else {
+                        is = connection.getInputStream();
+                    }
 
-                while ((nRead = connection.getInputStream().read(data, 0, data.length)) != -1) {
-                    exchange.getResponseBody().write(data, 0, nRead);
+                    byte[] data = new byte[16384];
+                    int nRead;
+
+                    while ((nRead = is.read(data, 0, data.length)) != -1) {
+                        exchange.getResponseBody().write(data, 0, nRead);
+                    }
                 }
             }
         }
