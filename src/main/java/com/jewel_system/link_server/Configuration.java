@@ -2,6 +2,7 @@ package com.jewel_system.link_server;
 
 import com.sun.net.httpserver.HttpServer;
 
+import java.io.File;
 import java.net.InetAddress;
 
 /**
@@ -14,4 +15,5 @@ public class Configuration {
     public static InetAddress ADDRESS;
     public static int PORT;
     public static String PROTOCOL = "http";
+    public static String WEB_BASE = new File("").getAbsolutePath();
 }
