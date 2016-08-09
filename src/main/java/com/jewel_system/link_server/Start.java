@@ -1,8 +1,11 @@
 package com.jewel_system.link_server;
 
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,18 +70,22 @@ public class Start {
                 if (Files.isDirectory(file)) {
                     file = Paths.get(file.toString() + "/index.html");
                 }
+                httpExchange.getResponseHeaders().add("content-type", "text/html");
                 if (Files.exists(file)) {
                     httpExchange.sendResponseHeaders(200, Files.size(file));
                     Files.copy(file, httpExchange.getResponseBody());
                     httpExchange.close();
                 } else {
-                    httpExchange.sendResponseHeaders(404, Configuration.ERROR_404.length());
-                    httpExchange.getResponseBody().write(Configuration.ERROR_404.getBytes("UTF-8"));
-                    httpExchange.close();
+                    write404(httpExchange);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                httpExchange.sendResponseHeaders(500, 0);
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                httpExchange.getResponseBody().write(sw.toString().getBytes("UTF-8"));
             }
+            httpExchange.close();
         });
         Configuration.SERVER.createContext("/api/", httpExchange -> {
             try {
@@ -94,8 +101,18 @@ public class Start {
                 httpExchange.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                httpExchange.sendResponseHeaders(500, 0);
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                httpExchange.getResponseBody().write(sw.toString().getBytes("UTF-8"));
+                httpExchange.close();
             }
         });
+    }
+
+    private static void write404(HttpExchange httpExchange) throws IOException {
+        httpExchange.sendResponseHeaders(404, Configuration.ERROR_404.length());
+        httpExchange.getResponseBody().write(Configuration.ERROR_404.getBytes("UTF-8"));
     }
 
     /**
