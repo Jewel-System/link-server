@@ -4,10 +4,10 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import javax.activation.MimetypesFileTypeMap;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import javax.script.*;
+import java.io.*;
 import java.net.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -69,9 +69,13 @@ public class Start {
             try {
                 Path file = Paths.get(Configuration.WEB_BASE + httpExchange.getRequestURI().getRawPath()).toAbsolutePath();
                 if (Files.isDirectory(file)) {
-                    file = Paths.get(file.toString() + "/index.html");
+                   Path filed = Paths.get(file.toString() + "/index.html");
+                    if (!Files.exists(file)) {
+                        file = Paths.get(file.toString() + "/index.html");
+                    } else {
+                        file = filed;
+                    }
                 }
-                //"text/html"
                 String extension = "",
                        fileName = file.toString();
 
@@ -92,15 +96,31 @@ public class Start {
                     case "css":
                         mime = "text/css";
                         break;
-
                     default:
                         mime = MimetypesFileTypeMap.getDefaultFileTypeMap().getContentType(file.toString());
                 }
 
                 httpExchange.getResponseHeaders().add("content-type", mime);
                 if (Files.exists(file)) {
-                    httpExchange.sendResponseHeaders(200, Files.size(file));
-                    Files.copy(file, httpExchange.getResponseBody());
+                    httpExchange.sendResponseHeaders(200, 0);
+
+                    if (extension.equals("php")) {
+                        ScriptEngineManager manager = new ScriptEngineManager();
+                        ScriptEngine engine = manager.getEngineByExtension("php");
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        engine.getContext().setWriter(pw);
+                        try {
+                            engine.eval("<?php set_include_path('" + Configuration.WEB_BASE + "'); ?>" + new String(Files.readAllBytes(file), Charset.forName("UTF-8")));
+                        } catch (ScriptException ex) {
+                            ex.printStackTrace();
+                        }
+
+                        httpExchange.getResponseBody().write(sw.getBuffer().toString().getBytes("UTF-8"));
+
+                    } else {
+                        Files.copy(file, httpExchange.getResponseBody());
+                    }
                     httpExchange.close();
                 } else {
                     write404(httpExchange);
