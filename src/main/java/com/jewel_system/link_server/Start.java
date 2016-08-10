@@ -3,6 +3,7 @@ package com.jewel_system.link_server;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import javax.activation.MimetypesFileTypeMap;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -70,7 +71,33 @@ public class Start {
                 if (Files.isDirectory(file)) {
                     file = Paths.get(file.toString() + "/index.html");
                 }
-                httpExchange.getResponseHeaders().add("content-type", "text/html");
+                //"text/html"
+                String extension = "",
+                       fileName = file.toString();
+
+                int i = fileName.lastIndexOf('.');
+                int p = Math.max(fileName.lastIndexOf('/'), fileName.lastIndexOf('\\'));
+
+                if (i > p) {
+                    extension = fileName.substring(i+1);
+                }
+
+                String mime;
+                switch (extension) {
+                    case "html":
+                    case "htm":
+                    case "php":
+                        mime = "text/html";
+                        break;
+                    case "css":
+                        mime = "text/css";
+                        break;
+
+                    default:
+                        mime = MimetypesFileTypeMap.getDefaultFileTypeMap().getContentType(file.toString());
+                }
+
+                httpExchange.getResponseHeaders().add("content-type", mime);
                 if (Files.exists(file)) {
                     httpExchange.sendResponseHeaders(200, Files.size(file));
                     Files.copy(file, httpExchange.getResponseBody());

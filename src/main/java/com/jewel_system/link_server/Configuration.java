@@ -19,7 +19,7 @@ public class Configuration {
     public static InetAddress ADDRESS;
     public static int PORT;
     public static String PROTOCOL = "http";
-    public static String WEB_BASE = new File("").getAbsolutePath();
+    public static String WEB_BASE = new File("web").getAbsolutePath();
     public static String ERROR_404 = "404";
 
     static {
