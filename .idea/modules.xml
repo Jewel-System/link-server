@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/link-server.iml" filepath="$PROJECT_DIR$/link-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/link-server.iml" filepath="$PROJECT_DIR$/.idea/modules/link-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/link-server_main.iml" filepath="$PROJECT_DIR$/.idea/modules/link-server_main.iml" group="link-server" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/link-server_test.iml" filepath="$PROJECT_DIR$/.idea/modules/link-server_test.iml" group="link-server" />
     </modules>
   </component>
 </project>
