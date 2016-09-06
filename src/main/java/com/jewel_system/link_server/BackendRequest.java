@@ -68,7 +68,7 @@ public class BackendRequest implements Serializable {
     }
 
     public void sendRequest(HttpExchange exchange) throws IOException {
-        URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostAddress() + ":" + Configuration.PORT + location);
+        URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostName() + ":" + Configuration.PORT + location);
 
         URLConnection cc = url.openConnection();
         if (cc instanceof HttpURLConnection) {
