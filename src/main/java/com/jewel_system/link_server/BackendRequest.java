@@ -69,7 +69,7 @@ public class BackendRequest implements Serializable {
 
     public void sendRequest(HttpExchange exchange) throws IOException {
         URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostName() + ":" + Configuration.PORT + location);
-
+        System.out.println(url);
         URLConnection cc = url.openConnection();
         if (cc instanceof HttpURLConnection) {
 
@@ -86,13 +86,15 @@ public class BackendRequest implements Serializable {
 
             if (content.length > 0) {
                 connection.setDoOutput(true);
-                OutputStream os = connection.getOutputStream();
-                os.write(content);
-                os.flush();
             }
 
             connection.setRequestMethod(method);
 
+            if (content.length > 0) {
+                OutputStream os = connection.getOutputStream();
+                os.write(content);
+                os.flush();
+            }
 
             if (exchange != null) {
                 connection.getHeaderFields().forEach((k, v) -> {
