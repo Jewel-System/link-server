@@ -4,13 +4,13 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import javax.activation.MimetypesFileTypeMap;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import javax.swing.*;
+import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.*;
 
 /**
  * Created by Benjamin Claassen <BClaassen@live.com> on 8/5/2016.
@@ -18,11 +18,64 @@ import java.nio.file.Paths;
  * @author <a href="mailto:BClaassen@live.com">Benjamin Claassen</a>
  */
 public class Start {
+    private static volatile Connection conn;
+
     public static void main(String[] args) {
+        initializeDB();
+        setupOldRequestProcessor();
         createServer();
         setupHandlers();
         startServer();
         findServer();
+    }
+
+    private static void setupOldRequestProcessor() {
+        new Thread(() -> {
+            while (true) {
+                try {
+                    ResultSet resultSet = conn.createStatement().executeQuery("SELECT * FROM Store ORDER BY id ASC");
+
+                    while (resultSet.next()) {
+                        try {
+                            byte[] buf = resultSet.getBytes(2);
+                            ObjectInputStream objectIn = null;
+                            if (buf != null) {
+                                objectIn = new ObjectInputStream(new ByteArrayInputStream(buf));
+                            }
+
+                            if (objectIn != null) {
+                                ((BackendRequest) objectIn.readObject()).sendRequest(null);
+                            }
+
+                            PreparedStatement statement = conn.prepareStatement("DELETE FROM Store WHERE id = ?");
+                            statement.setInt(1, resultSet.getInt(1));
+                            statement.execute();
+                        } catch (IOException | ClassNotFoundException ignored) {
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(5 * 100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, "Old Request Processor").start();
+    }
+
+    private static void initializeDB() {
+        try {
+            String sDriverName = "org.sqlite.JDBC";
+            Class.forName(sDriverName);
+            conn = DriverManager.getConnection("jdbc:sqlite:store.db");
+            conn.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS Store (id INTEGER PRIMARY KEY AUTOINCREMENT, object blob);");
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Could not setup database, shutting down");
+            System.exit(1);
+        }
     }
 
     /**
@@ -58,6 +111,8 @@ public class Start {
             Configuration.SERVER = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 200), 50);
         } catch (IOException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Could not create server, shutting down");
+            System.exit(1);
         }
     }
 
@@ -125,7 +180,27 @@ public class Start {
 
                     BackendRequest request = new BackendRequest(httpExchange.getRequestHeaders(), httpExchange.getRequestBody(), httpExchange.getRequestMethod(), httpExchange.getRequestURI().toString());
                     //TODO: Store if sending fails
-                    request.sendRequest(httpExchange);
+                    try {
+                        request.sendRequest(httpExchange);
+                    } catch (IOException ex) {
+                        try {
+                            PreparedStatement statement = conn.prepareStatement("INSERT INTO Store (object) VALUES (?)");
+
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            ObjectOutputStream oos = new ObjectOutputStream(baos);
+                            oos.writeObject(request);
+                            oos.flush();
+                            oos.close();
+
+                            statement.setBytes(1, baos.toByteArray());
+                            statement.execute();
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(null, "Could not store request, shutting down");
+                            System.exit(1);
+                        }
+                        throw ex;
+                    }
                 }
                 httpExchange.close();
             } catch (IOException e) {

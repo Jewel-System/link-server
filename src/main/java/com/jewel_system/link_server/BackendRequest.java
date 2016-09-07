@@ -1,6 +1,5 @@
 package com.jewel_system.link_server;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.*;
@@ -8,6 +7,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Benjamin Claassen <BClaassen@live.com> on 8/7/2016.
@@ -18,7 +20,7 @@ public class BackendRequest implements Serializable {
 
     public static final long serialVersionUID = 3487495895819393L;
 
-    private Headers headers;
+    private HashMap<String, List<String>> headers = new HashMap<>(32);
     private byte[] content;
     private String method;
     private String location;
@@ -26,8 +28,8 @@ public class BackendRequest implements Serializable {
     public BackendRequest() {
     }
 
-    public BackendRequest(Headers headers, InputStream content, String method, String location) throws IOException {
-        this.headers = headers;
+    public BackendRequest(Map<String, List<String>> headers, InputStream content, String method, String location) throws IOException {
+        this.headers.putAll(headers);
         this.method = method;
         this.location = location;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -44,19 +46,20 @@ public class BackendRequest implements Serializable {
         this.content = buffer.toByteArray();
     }
 
-    public BackendRequest(Headers headers, byte[] content, String method, String location) {
-        this.headers = headers;
+    public BackendRequest(Map<String, List<String>> headers, byte[] content, String method, String location) {
+        this.headers.putAll(headers);
         this.content = content;
         this.method = method;
         this.location = location;
     }
 
-    public Headers getHeaders() {
+    public Map<String, List<String>> getHeaders() {
         return headers;
     }
 
-    public void setHeaders(Headers headers) {
-        this.headers = headers;
+    public void setHeaders(Map<String, List<String>> headers) {
+        this.headers.clear();
+        this.headers.putAll(headers);
     }
 
     public byte[] getContent() {
@@ -69,7 +72,7 @@ public class BackendRequest implements Serializable {
 
     public void sendRequest(HttpExchange exchange) throws IOException {
         URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostName() + ":" + Configuration.PORT + location);
-        System.out.println(url);
+
         URLConnection cc = url.openConnection();
         if (cc instanceof HttpURLConnection) {
 
