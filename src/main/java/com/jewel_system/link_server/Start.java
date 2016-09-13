@@ -34,11 +34,16 @@ public class Start {
         new Thread(() -> {
             while (true) {
                 try {
-                    ResultSet resultSet = conn.createStatement().executeQuery("SELECT * FROM Store ORDER BY id ASC");
+                    ResultSet resultSet = conn.createStatement().executeQuery("SELECT (SELECT count(*) FROM Store) as count, * FROM Store ORDER BY id ASC");
 
+                    boolean flip = true;
                     while (resultSet.next()) {
+                        if (flip) {
+                            flip = false;
+                            System.out.println(resultSet.getInt(1) + " request(s) are in waiting and are being processed");
+                        }
                         try {
-                            byte[] buf = resultSet.getBytes(2);
+                            byte[] buf = resultSet.getBytes(3);
                             ObjectInputStream objectIn = null;
                             if (buf != null) {
                                 objectIn = new ObjectInputStream(new ByteArrayInputStream(buf));
@@ -49,7 +54,7 @@ public class Start {
                             }
 
                             PreparedStatement statement = conn.prepareStatement("DELETE FROM Store WHERE id = ?");
-                            statement.setInt(1, resultSet.getInt(1));
+                            statement.setInt(1, resultSet.getInt(2));
                             statement.execute();
                         } catch (IOException | ClassNotFoundException ignored) {
                         }
