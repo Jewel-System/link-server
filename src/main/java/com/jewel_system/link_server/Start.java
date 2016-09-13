@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.util.Scanner;
 
 /**
  * Created by Benjamin Claassen <BClaassen@live.com> on 8/5/2016.
@@ -171,6 +172,26 @@ public class Start {
             }
             httpExchange.close();
         });
+        Configuration.SERVER.createContext("/link/config", httpExchange -> {
+            try {
+                if ("POST".equalsIgnoreCase(httpExchange.getRequestMethod())) {
+                    try (Scanner scanner = new Scanner(httpExchange.getRequestBody()).useDelimiter("\\A")) {
+                        Configuration.fromJson(scanner.hasNext() ? scanner.next() : null);
+                        Configuration.store();
+                    }
+                }
+                httpExchange.sendResponseHeaders(200, 0);
+                httpExchange.getResponseBody().write(Configuration.toJson().getBytes("UTF-8"));
+                httpExchange.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                httpExchange.sendResponseHeaders(500, 0);
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                httpExchange.getResponseBody().write(sw.toString().getBytes("UTF-8"));
+                httpExchange.close();
+            }
+        });
         Configuration.SERVER.createContext("/api/", httpExchange -> {
             try {
                 URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostAddress() + ":" + Configuration.PORT + httpExchange.getRequestURI());
@@ -179,7 +200,6 @@ public class Start {
                 if (cc instanceof HttpURLConnection) {
 
                     BackendRequest request = new BackendRequest(httpExchange.getRequestHeaders(), httpExchange.getRequestBody(), httpExchange.getRequestMethod(), httpExchange.getRequestURI().toString());
-                    //TODO: Store if sending fails
                     try {
                         request.sendRequest(httpExchange);
                     } catch (IOException ex) {
@@ -215,8 +235,8 @@ public class Start {
     }
 
     private static void write404(HttpExchange httpExchange) throws IOException {
-        httpExchange.sendResponseHeaders(404, Configuration.ERROR_404.length());
-        httpExchange.getResponseBody().write(Configuration.ERROR_404.getBytes("UTF-8"));
+        httpExchange.sendResponseHeaders(404, 0);
+        Files.copy(Paths.get(Configuration.ERRORS.get("404")), httpExchange.getResponseBody());
     }
 
     /**
