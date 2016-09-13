@@ -99,6 +99,8 @@ public class BackendRequest implements Serializable {
                 os.flush();
             }
 
+            connection.connect();
+
             if (exchange != null) {
                 connection.getHeaderFields().forEach((k, v) -> {
                     if (k != null) {
