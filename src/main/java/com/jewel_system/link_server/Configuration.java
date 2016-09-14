@@ -48,6 +48,11 @@ public class Configuration {
     private Configuration() {
     }
 
+    /**
+     * Converts configuration to JSON
+     *
+     * @return The finished JSON
+     */
     public static String toJson() {
         String result = "{\n" +
                 "    \"server\": {\n" +
@@ -69,36 +74,46 @@ public class Configuration {
         return result;
     }
 
-    public static void fromJson(String jsons) throws UnknownHostException {
-        JSONObject json = jsons != null ? new JSONObject(jsons) : null;
-        if (json == null) {
+    /**
+     * Loads configuration from JSON
+     *
+     * @param json The JSON that needs to be converted to configuration
+     * @throws UnknownHostException If the supplied host can't be reached
+     */
+    public static void fromJson(String json) throws UnknownHostException {
+        JSONObject jsonz = json != null ? new JSONObject(json) : null;
+        if (jsonz == null) {
             throw new IllegalStateException("JSON is required");
         }
-        if (json.has("server")) {
-            JSONObject server = json.getJSONObject("server");
-            if (json.has("host")) {
+        if (jsonz.has("server")) {
+            JSONObject server = jsonz.getJSONObject("server");
+            if (jsonz.has("host")) {
                 ADDRESS = InetAddress.getByName(server.getString("host"));
             }
-            if (json.has("protocol")) {
+            if (jsonz.has("protocol")) {
                 PROTOCOL = server.getString("protocol");
             }
 
-            if (json.has("port")) {
+            if (jsonz.has("port")) {
                 PORT = server.getInt("port");
             }
         }
-        if (json.has("errors")) {
-            JSONObject errors = json.getJSONObject("errors");
+        if (jsonz.has("errors")) {
+            JSONObject errors = jsonz.getJSONObject("errors");
             errors.keySet().forEach(k -> ERRORS.put(k, errors.getString(k)));
         }
-        if (json.has("machine")) {
-            JSONObject machine = json.getJSONObject("machine");
+        if (jsonz.has("machine")) {
+            JSONObject machine = jsonz.getJSONObject("machine");
             if (machine.has("type")) {
                 TYPE = machine.getString("type");
             }
         }
     }
 
+    /**
+     * Store configuration to disk
+     * @throws IOException Thrown if can't write to disk
+     */
     public static void store() throws IOException {
         Files.write(Paths.get("config.json"), toJson().getBytes("UTF-8"));
     }

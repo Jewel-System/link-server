@@ -30,6 +30,9 @@ public class Start {
         findServer();
     }
 
+    /**
+     * Setup handler to process old requests to the api
+     */
     private static void setupOldRequestProcessor() {
         new Thread(() -> {
             while (true) {
@@ -71,10 +74,12 @@ public class Start {
         }, "Old Request Processor").start();
     }
 
+    /**
+     * Connects to a SQLite database to store requests
+     */
     private static void initializeDB() {
         try {
-            String sDriverName = "org.sqlite.JDBC";
-            Class.forName(sDriverName);
+            Class.forName("org.sqlite.JDBC");
             conn = DriverManager.getConnection("jdbc:sqlite:store.db");
             conn.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS Store (id INTEGER PRIMARY KEY AUTOINCREMENT, object blob);");
         } catch (ClassNotFoundException | SQLException e) {
@@ -103,7 +108,7 @@ public class Start {
             Configuration.ADDRESS = packet.getAddress();
             Configuration.PORT = Integer.parseInt(new String(test).trim());
             socket.close();
-            System.out.println("Found server at: " + Configuration.ADDRESS + ":" + Configuration.PORT);
+            System.out.println("Found server at: " + Configuration.ADDRESS.getHostName() + ":" + Configuration.PORT);
         } catch (IOException e) {
             e.printStackTrace();
         }

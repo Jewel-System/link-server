@@ -57,19 +57,37 @@ public class BackendRequest implements Serializable {
         return headers;
     }
 
+    /**
+     * Set headers for the request
+     *
+     * @param headers The headers to set
+     */
     public void setHeaders(Map<String, List<String>> headers) {
         this.headers.clear();
         this.headers.putAll(headers);
     }
 
+    /**
+     * Get the content of the request
+     * @return The content
+     */
     public byte[] getContent() {
         return content;
     }
 
+    /**
+     * Set the content of the request
+     * @param content The new content for the request
+     */
     public void setContent(byte[] content) {
         this.content = content;
     }
 
+    /**
+     * Send the request to the backend
+     * @param exchange The optional client to send the backend reply to
+     * @throws IOException Exception thrown if the server can't be reached
+     */
     public void sendRequest(HttpExchange exchange) throws IOException {
         URL url = new URL(Configuration.PROTOCOL + "://" + Configuration.ADDRESS.getHostName() + ":" + Configuration.PORT + location);
 
@@ -136,6 +154,7 @@ public class BackendRequest implements Serializable {
                 "headers=" + headers +
                 ", content=" + Arrays.toString(content) +
                 ", method='" + method + '\'' +
+                ", location='" + location + '\'' +
                 '}';
     }
 }
