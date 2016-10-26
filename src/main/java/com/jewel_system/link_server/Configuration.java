@@ -26,7 +26,7 @@ public class Configuration {
 
     public static ConcurrentHashMap<String, String> ERRORS = new ConcurrentHashMap<>();
 
-    public static String TYPE = "late";
+    public static String TYPE = "borrow";
 
     public static String WEB_BASE = Paths.get("web").toAbsolutePath().toString();
 
@@ -54,24 +54,26 @@ public class Configuration {
      * @return The finished JSON
      */
     public static String toJson() {
-        String result = "{\n" +
-                "    \"server\": {\n" +
-                "        \"protocol\":\"" + PROTOCOL + "\",\n" +
-                "        \"host\":\"" + ADDRESS.getHostName() + "\",\n" +
-                "        \"port\":\"" + PORT + "\"\n" +
-                "    },\n" +
-                "   \"errors\": {\n";
 
+        JSONObject object = new JSONObject();
+        JSONObject server = new JSONObject();
+        server.append("protocol", PROTOCOL);
+        server.append("host", ADDRESS.getHostName());
+        server.append("port", PORT);
+        server.append("base", WEB_BASE);
+        object.append("server", server);
+
+        JSONObject errors = new JSONObject();
         for (Map.Entry<String, String> entry : ERRORS.entrySet()) {
-            result += "        \"" + entry.getKey() + "\":\"" + entry.getValue() + "\",\n";
+            errors.append(entry.getKey(), entry.getValue());
         }
-        result += "    },\n" +
-                "    \"machine\": {\n" +
-                "        \"type\":\"" + TYPE + "\"\n" +
-                "    }\n" +
-                "}";
 
-        return result;
+        object.append("errors", errors);
+
+        JSONObject machine = new JSONObject();
+        machine.append("type", TYPE);
+
+        return object.toString();
     }
 
     /**
@@ -96,6 +98,10 @@ public class Configuration {
 
             if (jsonz.has("port")) {
                 PORT = server.getInt("port");
+            }
+
+            if (jsonz.has("base")) {
+                WEB_BASE = Paths.get(server.getString("base")).toAbsolutePath().toString();
             }
         }
         if (jsonz.has("errors")) {
