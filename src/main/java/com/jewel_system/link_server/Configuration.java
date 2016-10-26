@@ -57,21 +57,21 @@ public class Configuration {
 
         JSONObject object = new JSONObject();
         JSONObject server = new JSONObject();
-        server.append("protocol", PROTOCOL);
-        server.append("host", ADDRESS.getHostName());
-        server.append("port", PORT);
-        server.append("base", WEB_BASE);
-        object.append("server", server);
+        server.put("protocol", PROTOCOL);
+        server.put("host", ADDRESS.getHostName());
+        server.put("port", PORT);
+        server.put("base", WEB_BASE);
+        object.put("server", server);
 
         JSONObject errors = new JSONObject();
         for (Map.Entry<String, String> entry : ERRORS.entrySet()) {
-            errors.append(entry.getKey(), entry.getValue());
+            errors.put(entry.getKey(), entry.getValue());
         }
 
-        object.append("errors", errors);
+        object.put("errors", errors);
 
         JSONObject machine = new JSONObject();
-        machine.append("type", TYPE);
+        machine.put("type", TYPE);
 
         return object.toString();
     }
@@ -89,18 +89,18 @@ public class Configuration {
         }
         if (jsonz.has("server")) {
             JSONObject server = jsonz.getJSONObject("server");
-            if (jsonz.has("host")) {
+            if (server.has("host")) {
                 ADDRESS = InetAddress.getByName(server.getString("host"));
             }
-            if (jsonz.has("protocol")) {
+            if (server.has("protocol")) {
                 PROTOCOL = server.getString("protocol");
             }
 
-            if (jsonz.has("port")) {
+            if (server.has("port")) {
                 PORT = server.getInt("port");
             }
 
-            if (jsonz.has("base")) {
+            if (server.has("base")) {
                 WEB_BASE = Paths.get(server.getString("base")).toAbsolutePath().toString();
             }
         }
